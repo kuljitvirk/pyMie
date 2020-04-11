@@ -17,6 +17,8 @@ from dataclasses import dataclass
 from scipy import special as sp
 import pickle
 from multiprocessing import Pool, cpu_count
+sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.dirname(__file__)+'/../src')
 from vsh import *
 #
 def mie_alpha_beta(l, nratio, ka):
@@ -101,37 +103,6 @@ def apply_tmatrix(t, lvals_t, coeffs, lvals_coeffs):
         A[i] = t[0][l_t]*coeffs[0][i]
         B[i] = t[1][l_t]*coeffs[1][i]
     return A,B,lvals_coeffs
-#
-def pw_to_vsh(maxL, kvec, ehat,kind=1, return_vshobj=False, ncpu=1):
-    """
-    Inputs
-    -------
-    kvec = [Nx3] array with 3-vector per row
-    ehat = [Nx3] array with 3-vector per row
-    Returns
-    -------
-    aPW_ehat[i] =  4pi i^l     conj(A1lm(khat)).ehat (lm,kvec[i])
-    bPW_ehat[i] = -4pi i^(l+1) conj(A2lm(khat)).ehat (lm,kvec[i])
-    """
-    kvec = np.array(kvec)
-    ehat = np.array(ehat)
-    assert kvec.ndim==2, 'kvec should be in the form of Nx3 matrix'
-    assert ehat.ndim==2, 'ehat should be in the form Nx3, same as kvec shape'
-    vobj  = vsh(maxL, np.atleast_2d(kvec), coord='Cartesian',kind=kind, ncpu=ncpu)
-    # (lm, Cartesian, kvec-point)   
-    ehatT = ehat.T
-    aPW = (vobj.A1.conj() * ehatT[None,:,:]).sum(axis=1)
-    bPW = (vobj.A2.conj() * ehatT[None,:,:]).sum(axis=1)
-
-    L  = vobj.Lvalues[:,None]
-    aPW *=  4 * pi * np.exp(1j * pi/2*L    )
-    bPW *= -4 * pi * np.exp(1j * pi/2*(1+L))
-    
-    if return_vshobj:
-        return aPW, bPW, vobj
-    return aPW, bPW, vobj.Lvalues   
-def vsh_to_pw(Mcoeff, Ncoeff, vobj):
-    raise NotImplementedError('Not implemented yet')
 #
 def sigma_ext(maxL,nratio, k0,radius):
     """
@@ -277,12 +248,19 @@ def exact_integral_on_spherical_surface(maxL, n, shell_radius, kvec_out, transve
         #---------------------------------------------------------------------
     return Wa_shell, Wb_shell
 #
-def compute_fields(maxL, points, n, save_results=None):
+def compute_fields(
+    maxL, 
+    points, 
+    radius, 
+    n, 
+    ehatINC    = [[0.,1.,0.]],
+    return_components = False,
+    save_results=None,
+    ncpu = 1
+    ):
     wavelength = 1.0
     kvecINC    = [[0.,0.,-1.]]
-    ehatINC    = [[0.,1.,0.]]
     k0         = 2*pi*wavelength
-    radius     = 1.0
     ka         = k0*radius
     a, b, Lpw = pw_to_vsh(maxL, kvecINC, ehatINC)
     tint = np.array([mie_int(l,n,ka) for l in Lpw])
@@ -290,22 +268,22 @@ def compute_fields(maxL, points, n, save_results=None):
     e,f = tsca[:,0]*a[:,0], tsca[:,1]*b[:,0]
     c,d = tint[:,0]*a[:,0], tint[:,1]*b[:,0]
 
+    points = np.asarray(points)
     r = em.vecmag_abs(points)
     sel_i = r <= radius
-    sel_o = ~sel_i
-    vinc  = vsh(maxL, points, kind=1)
-    vi = vsh(maxL, points[sel_i]*k0, kind=1)
-    vs = vsh(maxL, points[sel_o]*k0, kind=3, size_parameter=ka)
+    sel_o = r >= radius
+    vinc  = vsh(maxL, points*k0, kind=1, ncpu=ncpu)
+    vi = vsh(maxL, points[sel_i]*k0, kind=1,n=n, ncpu=ncpu)
+    vs = vsh(maxL, points[sel_o]*k0, kind=3, size_parameter=ka, ncpu=ncpu)
 
-    E  = np.zeros((3,len(points)), dtype=np.complex)
     Einc = vinc.realspace_field(a.squeeze(),b.squeeze())
     Ei = vi.realspace_field(c,d)
     Es = vs.realspace_field(e,f)
-    E[:,sel_i] = Ei
-    E[:,sel_o] = Es + Einc[:,sel_o]
-    if save_results:
-        pickle.dump(E, open(save_results,'wb'))
-    return E
+    E  = Einc.copy()
+    E[:,sel_i]  = Ei 
+    E[:,sel_o]  += Es
+    return E, Einc #,(Ei, Es, Einc)
+
 #
 if __name__=='__main__':
     pass

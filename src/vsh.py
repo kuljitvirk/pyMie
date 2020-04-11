@@ -12,10 +12,14 @@ from dataclasses import dataclass
 from scipy import special as sp
 import pickle
 from multiprocessing import Pool, cpu_count
+sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.dirname(__file__)+'/../src')
 import emops_simple as em
+
 CTYPE = np.complex128
 np.seterr(under='warn')
 __VERSION__=1.0
+
 def transform_coordinates_cartesian_to_spherical(points):
     """
     Input
@@ -31,6 +35,7 @@ def transform_coordinates_cartesian_to_spherical(points):
     tht = np.arctan2(u, points[:,-1])
     phi = np.arctan2(points[:,1],points[:,0])   
     return np.vstack((r, tht, phi)).T
+#
 def transform_coordinates_spherical_to_cartesian(points):
     """
     """
@@ -285,3 +290,34 @@ class vsh(object):
         return F
     #
 #
+#
+def pw_to_vsh(maxL, kvec, ehat,kind=1, return_vshobj=False, ncpu=1):
+    """
+    Inputs
+    -------
+    kvec = [Nx3] array with 3-vector per row
+    ehat = [Nx3] array with 3-vector per row
+    Returns
+    -------
+    aPW_ehat[i] =  4pi i^l     conj(A1lm(khat)).ehat (lm,kvec[i])
+    bPW_ehat[i] = -4pi i^(l+1) conj(A2lm(khat)).ehat (lm,kvec[i])
+    """
+    kvec = np.array(kvec)
+    ehat = np.array(ehat)
+    assert kvec.ndim==2, 'kvec should be in the form of Nx3 matrix'
+    assert ehat.ndim==2, 'ehat should be in the form Nx3, same as kvec shape'
+    vobj  = vsh(maxL, np.atleast_2d(kvec), coord='Cartesian',kind=kind, ncpu=ncpu)
+    # (lm, Cartesian, kvec-point)   
+    ehatT = ehat.T
+    aPW = (vobj.A1.conj() * ehatT[None,:,:]).sum(axis=1)
+    bPW = (vobj.A2.conj() * ehatT[None,:,:]).sum(axis=1)
+
+    L  = vobj.Lvalues[:,None]
+    aPW *=  4 * pi * np.exp(1j * pi/2*L    )
+    bPW *= -4 * pi * np.exp(1j * pi/2*(1+L))
+    
+    if return_vshobj:
+        return aPW, bPW, vobj
+    return aPW, bPW, vobj.Lvalues   
+def vsh_to_pw(Mcoeff, Ncoeff, vobj):
+    raise NotImplementedError('Not implemented yet')
