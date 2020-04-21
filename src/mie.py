@@ -211,11 +211,12 @@ def far_field_mie_fwd(maxL, nratio, radius, ehatINC):
     F = np.asarray(ehatINC) * F
     return  F
 #
-def exact_integral_on_spherical_surface(maxL, n, shell_radius, kvec_out, transverse = False):
+def exact_integral_on_spherical_surface(maxL, n, shell_radius, kvec_out, transverse = False,ncpu=None):
     """
     """
+    kvec_out = np.asarray(kvec_out)
     SphericalBesselJ = lambda n, z : sp.spherical_jn(n,z).astype(CTYPE)
-    vobjk = vsh(maxL, shell_radius*kvec_out)
+    vobjk = vsh(maxL, shell_radius*kvec_out,ncpu=ncpu)
     # 
     if transverse:
         Nvec = vobjk.Ntrans
@@ -283,7 +284,8 @@ def compute_fields(
     E[:,sel_i]  = Ei 
     E[:,sel_o]  += Es
     return E, Einc #,(Ei, Es, Einc)
-
 #
+def volume():
+    pass
 if __name__=='__main__':
     pass

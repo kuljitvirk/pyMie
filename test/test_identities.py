@@ -16,6 +16,10 @@ from vsh import *
 # Vector Spherical Harmonics values
 #=============================================================================
 def vector_sph_values():
+    """
+    Numerical values of A1 and A2 VSH, tested against a table made in Mathematica
+    The Mathematica results are tested against a table in literature
+    """
     maxL  = 3   
     theta = [pi/4.] #np.linspace(0, pi, 5)
     phi   = [0.0] #np.linspace(0, 2*pi, 5)
@@ -38,7 +42,11 @@ def vector_sph_values():
             '{:14.3f} {:14.5f} {:14.3f}'.format(*vobj.A2[i,:,0].real),
             '{:14.3f} {:14.3f} {:14.3f}'.format(*vobj.A2[i,:,0].imag))
     return
+#
 def integral_identity(maxL=1,N=100,ksph = np.array([[1., pi/3, 0.]]), verbose=0):
+    """
+    Fourier transform of VSH functions, over a unit sphere
+    """
     kcart = transform_coordinates_spherical_to_cartesian(ksph)
     t = np.linspace(0,pi,N)
     p = np.linspace(0,2*pi,N)
@@ -76,7 +84,7 @@ def integral_identity(maxL=1,N=100,ksph = np.array([[1., pi/3, 0.]]), verbose=0)
             print('I2    ',I2[i])
             print('-'*100)
     return err1,err2
-
+#
 def check_identities():
     #run_test_pw(save='test_pw.pkl')
     #vector_sph_values()
@@ -94,7 +102,7 @@ def check_identities():
         E = np.array(E)
         print('N',N, 'max(error)',E.max(axis=0))
     pass
-
+#
 def check_values():
     ksph = np.array([[2., pi/3, 0.]])
     kcart = transform_coordinates_spherical_to_cartesian(ksph)
@@ -108,7 +116,7 @@ def check_values():
         print('M1 {:d}{:d}:'.format(l,m),vobj.M[i,:,0])
     for i,(l,m) in enumerate(vobj.angular_momentum_table):
         print('N1 {:d}{:d}:'.format(l,m),vobj.N[i,:,0])
-
+#
 def check_radial_integral_identity1(
     maxL = 1,
     nratio = 2.,
@@ -118,7 +126,6 @@ def check_radial_integral_identity1(
     """
 
     """
-
     falpha1 = lambda l,x : n*x**2 * (sp.spherical_jn(l-1,n*x) * sp.spherical_jn(l,x) - 1/n * sp.spherical_jn(l-1,x) * sp.spherical_jn(l,n*x)) 
     x = np.linspace(0, maxr, N)
     dx = x[1]-x[0]
@@ -135,7 +142,7 @@ def check_radial_integral_identity1(
     ax.legend()
     ax.grid(True)
     plt.show()
-
+#
 def check_radial_integral_identity2(
     maxL = 1,
     nratio = 2.,
@@ -204,36 +211,6 @@ def integral_on_spherical_surface(maxL, n, shell_radius, Npoints, kvec_out, tran
                 I2[ii,:,ik] = np.matmul(I2[ii,:,ik], P)
     #
     return I1, I2, vobjk
-#
-def compute_fields(maxL, points, n, save_results=None):
-    wavelength = 1.0
-    kvecINC    = [[0.,0.,-1.]]
-    ehatINC    = [[0.,1.,0.]]
-    k0         = 2*pi*wavelength
-    radius     = 1.0
-    ka         = k0*radius
-    a, b, Lpw = pw_to_vsh(maxL, kvecINC, ehatINC)
-    tint = np.array([mie_int(l,n,ka) for l in Lpw])
-    tsca = np.array([mie_sca(l,n,ka,normalized=True) for l in Lpw])
-    e,f = tsca[:,0]*a[:,0], tsca[:,1]*b[:,0]
-    c,d = tint[:,0]*a[:,0], tint[:,1]*b[:,0]
-
-    r = em.vecmag_abs(points)
-    sel_i = r <= radius
-    sel_o = ~sel_i
-    vinc  = vsh(maxL, points, kind=1)
-    vi = vsh(maxL, points[sel_i]*k0, kind=1)
-    vs = vsh(maxL, points[sel_o]*k0, kind=3, size_parameter=ka)
-
-    E  = np.zeros((3,len(points)), dtype=np.complex)
-    Einc = vinc.realspace_field(a.squeeze(),b.squeeze())
-    Ei = vi.realspace_field(c,d)
-    Es = vs.realspace_field(e,f)
-    E[:,sel_i] = Ei
-    E[:,sel_o] = Es + Einc[:,sel_o]
-    if save_results:
-        pickle.dump(E, open(save_results,'wb'))
-    return E
 #
 if __name__=='__main__':
     pass
