@@ -164,19 +164,17 @@ def interpret_pol(ehat, khat):
 #
 def far_field_mie(maxL, nratio, radius, khatOUT, khatINC, ehatINC, minL=1):
     """
-    Inputs
-    ------
-    maxL   : maximum value of L for spherical harmonics
-    nratio : sphere refractive index to ambient ratio
-    radius : unit of wavelength
-    khatOUT: direction vectors for OUTGOING wavevectors shape = [3, nk]
-    khatINC: direction vector for incoming wave: shape [3,]
-    ehat   : Polarization vector of INCOMING wave
-             can be a character: s,p,x,y
+    Args:
+        maxL   : maximum value of L for spherical harmonics
+        nratio : sphere refractive index to ambient ratio
+        radius : unit of wavelength
+        khatOUT: direction vectors for OUTGOING wavevectors shape = [3, nk]
+        khatINC: direction vector for incoming wave: shape [3,]
+        ehat   : Polarization vector of INCOMING wave
+                can be a character: s,p,x,y
     
-    Returns
-    -------
-    FarField = [carteisan, direction]
+    Returns:
+        FarField = [carteisan, direction]
     """
     assert maxL>0
     ehatINC = interpret_pol(ehatINC, khatINC)
@@ -193,14 +191,14 @@ def far_field_mie(maxL, nratio, radius, khatOUT, khatINC, ehatINC, minL=1):
     f = []
     for i,l in enumerate(lvals):
         tsca = mie_sca(l, nratio, radius * k0)
-        ei = tsca[0] * a[i] * np.exp(-1j*pi/2 * l)
+        ei = tsca[0] * a[i] * np.exp( 1j*pi/2 * (-l))
         fi = tsca[1] * b[i] * np.exp( 1j*pi/2 * (-l+1))
         e += [tsca[0] * a[i]]
         f += [tsca[1] * b[i]]
         FarField += 1/(1j*k0) * ( vobj_k.A1[i] * ei + vobj_k.A2[i] * fi )
     e = np.array(e)
     f = np.array(f)
-    return FarField, (a,b,e,f)
+    return FarField
 #
 def far_field_mie_fwd(maxL, nratio, radius, ehatINC):
     k0 = 2*pi
