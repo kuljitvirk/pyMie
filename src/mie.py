@@ -187,17 +187,11 @@ def far_field_mie(maxL, nratio, radius, khatOUT, khatINC, ehatINC, minL=1):
     vobj_k = vsh(maxL, np.atleast_2d(khatOUT),size_parameter=k0*radius, coord='Cartesian',kind=3,minL=minL)
     
     FarField = np.zeros(vobj_k.A1.shape[1:], dtype=np.complex)
-    e = []
-    f = []
     for i,l in enumerate(lvals):
         tsca = mie_sca(l, nratio, radius * k0)
         ei = tsca[0] * a[i] * np.exp( 1j*pi/2 * (-l))
         fi = tsca[1] * b[i] * np.exp( 1j*pi/2 * (-l+1))
-        e += [tsca[0] * a[i]]
-        f += [tsca[1] * b[i]]
         FarField += 1/(1j*k0) * ( vobj_k.A1[i] * ei + vobj_k.A2[i] * fi )
-    e = np.array(e)
-    f = np.array(f)
     return FarField
 #
 def far_field_mie_fwd(maxL, nratio, radius, ehatINC):
