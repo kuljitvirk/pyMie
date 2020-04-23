@@ -238,6 +238,33 @@ def create_polbasis_xy(K):
     Y = Y * sign_kz
     return X, Y
 #
+def dyadic_vectors(khatOUT, khatINC):
+    """
+    Polarization vectors for S-matrix dyad. 
+    .. math:
+        \mathbf{e}_{i,\perp} = \frac{\hat{\mathbf{k}}_i \times \hat{\mathbf{k}}}{|\hat{\mathbf{k}}_i \times \hat{\mathbf{k}}|}
+        \mathbf{e}_{i,\par}  = \frac{\hat{\mathbf{e}}_{i,\perp} \times \hat{\mathbf{k}_i}}{|\hat{\mathbf{e}}_{i,\perp} \times \hat{\mathbf{k}_i}|}
+        \mathbf{e}_{o,\perp} = \mathbf{e}_{i,\perp}
+        \mathbf{e}_{o,\par}  = \frac{\hat{\mathbf{e}}_{o,\perp} \times \hat{\mathbf{k}}}{|\hat{\mathbf{e}}_{o,\perp} \times \hat{\mathbf{k}}|}
+    """
+    ki = khatINC.squeeze()
+    ehati = []
+    ehato = []
+    for i, khat in enumerate(khatOUT):
+        ei = np.cross(ki, khat)
+        ei = [ei,np.cross(ei, ki)]
+        
+        eo = np.cross(ki, khat)
+        eo = [eo,np.cross(eo, khat)]
+        
+        ei = [a.squeeze()/em.vecmag(a) for a in ei]
+        eo = [a.squeeze()/em.vecmag(a) for a in eo]
+        
+        ehati += [ei]
+        ehato += [eo]
+        
+    return np.array(ehato), np.array(ehati)
+#
 def transform_polbasis_sp_to_cartesian(K,E,sgamma='x'):
     """
     Converts field written in s-p basis to Cartesian
