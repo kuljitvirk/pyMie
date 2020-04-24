@@ -291,16 +291,16 @@ class vsh(object):
     #
 #
 #
-def pw_to_vsh(maxL, kvec, ehat,kind=1, return_vshobj=False, ncpu=1):
+def pw_to_vsh(maxL, kvec, ehat,kind=1, return_vshobj=False, ncpu=None):
     """
-    Inputs
-    -------
-    kvec = [Nx3] array with 3-vector per row
-    ehat = [Nx3] array with 3-vector per row
-    Returns
-    -------
-    aPW_ehat[i] =  4pi i^l     conj(A1lm(khat)).ehat (lm,kvec[i])
-    bPW_ehat[i] = -4pi i^(l+1) conj(A2lm(khat)).ehat (lm,kvec[i])
+    Args:
+        maxL : Maximum angular momentum number
+        kvec : [Nx3] array with 3-vector per row
+        ehat : [Nx3] array with 3-vector per row
+    Returns:
+        aPW_ehat[i] :  4pi i^l     conj(A1lm(khat)).ehat (lm,kvec[i])
+        bPW_ehat[i] : -4pi i^(l+1) conj(A2lm(khat)).ehat (lm,kvec[i])
+        Lvalues     : Total angular momentum number for each row in the coefficients arrays
     """
     kvec = np.array(kvec)
     ehat = np.array(ehat)

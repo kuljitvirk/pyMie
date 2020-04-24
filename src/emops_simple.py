@@ -257,8 +257,8 @@ def dyadic_vectors(khatOUT, khatINC):
         eo = np.cross(ki, khat)
         eo = [eo,np.cross(eo, khat)]
         
-        ei = [a.squeeze()/em.vecmag(a) for a in ei]
-        eo = [a.squeeze()/em.vecmag(a) for a in eo]
+        ei = [a.squeeze()/vecmag(a) for a in ei]
+        eo = [a.squeeze()/vecmag(a) for a in eo]
         
         ehati += [ei]
         ehato += [eo]

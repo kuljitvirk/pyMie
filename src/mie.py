@@ -162,12 +162,12 @@ def interpret_pol(ehat, khat):
             raise NameError('Cannot handle polarization '+ehat)
     return ehat
 #
-def far_field_mie(maxL, nratio, radius, khatOUT, khatINC, ehatINC, minL=1):
+def far_field(maxL, nratio, radius, khatOUT, khatINC, ehatINC, minL=1):
     """
     Args:
         maxL   : maximum value of L for spherical harmonics
         nratio : sphere refractive index to ambient ratio
-        radius : unit of wavelength
+        radius : radius / wavelength ( = size_parameter / ($\pi$))
         khatOUT: direction vectors for OUTGOING wavevectors shape = [3, nk]
         khatINC: direction vector for incoming wave: shape [3,]
         ehat   : Polarization vector of INCOMING wave
@@ -193,6 +193,26 @@ def far_field_mie(maxL, nratio, radius, khatOUT, khatINC, ehatINC, minL=1):
         fi = tsca[1] * b[i] * np.exp( 1j*pi/2 * (-l+1))
         FarField += 1/(1j*k0) * ( vobj_k.A1[i] * ei + vobj_k.A2[i] * fi )
     return FarField
+#
+def far_field_dyadic(maxL, n, radius, khatOUT, khatINC):
+    """
+    Args:
+        maxL (int) : maximum total angular momentum number
+        n (complex) : ratio of sphere refractive index to background
+        radius (float) : radius / wavelength
+        khatOUT (array) : outgoing kvectors
+        khatINC  (array) : incoming kvector
+    Returns:
+        S = $[S_{\per\per},S_{\par\per},S_{\per\par},S_{\par\par}]$
+    """
+    eo, ei = em.dyadic_vectors(khatOUT, khatINC)
+    S = np.zeros((len(khatOUT),4),dtype=np.complex)
+    for i, khat in enumerate(khatOUT):
+        Fper = far_field(maxL, n, radius, khat[None,:], khatINC, ei[i][0][None,:]).squeeze()
+        Fpar = far_field(maxL, n, radius, khat[None,:], khatINC, ei[i][1][None,:]).squeeze()
+        S[i] = [(eo[i,0]*Fper).sum(),(eo[i,1]*Fper).sum(),(eo[i,0]*Fpar).sum(),(eo[i,1]*Fpar).sum()]
+    #
+    return S
 #
 def far_field_mie_fwd(maxL, nratio, radius, ehatINC):
     k0 = 2*pi
@@ -249,13 +269,14 @@ def compute_fields(
     ehatINC    = [[0.,1.,0.]],
     return_components = False,
     save_results=None,
-    ncpu = 1
+    ncpu = None
     ):
     wavelength = 1.0
     kvecINC    = [[0.,0.,-1.]]
     k0         = 2*pi*wavelength
     ka         = k0*radius
-    a, b, Lpw = pw_to_vsh(maxL, kvecINC, ehatINC)
+    a, b, Lpw  = pw_to_vsh(maxL, kvecINC, ehatINC)
+
     tint = np.array([mie_int(l,n,ka) for l in Lpw])
     tsca = np.array([mie_sca(l,n,ka,normalized=True) for l in Lpw])
     e,f = tsca[:,0]*a[:,0], tsca[:,1]*b[:,0]
@@ -277,7 +298,55 @@ def compute_fields(
     E[:,sel_o]  += Es
     return E, Einc #,(Ei, Es, Einc)
 #
-def volume():
-    pass
+from scipy.integrate import simps
+def far_field_volume_integral(
+    radius  = 1,
+    n       = 3+0.5j,
+    maxL    = 5,
+    N       = 100,
+    nko     = 4,
+    khatOUT = [[0.,0.,1.]],
+    khatINC = [[0.,0.,-1.]],
+    ehatINC = [[0.,1.,0.]],
+    integrate = simps):
+    """
+    The integration over radial direction must be performed by a method of higher order than Riemann sums.
+    The oscillatory nature of the integrals accumulate to significant relative errors if integration rule
+    is not accurate enough. I have found that Simpson's rule gives adequate results with N=100. The maximum 
+    absolute error is 0.06% of the exact result at the point where maximum error occurs.
+
+    Result should match the statement:
+    ::
+        Fexact = far_field_mie(maxL, n, radius,kvecO, khatINC,ehatINC)
+    """
+    k0      = 2*pi
+    # Mie coefficients for the sphere's interior
+    # - Incident Plane Wave amplitudes
+    a, b, Lvalues = vsh.pw_to_vsh(maxL, khatINC, ehatINC, ncpu=1)
+    a, b = a[:,0], b[:,0]
+    # - T-matrix
+    _Tint = np.array([mie_int(l, n, k0*radius) for l in Lvalues])
+    c,d = _Tint[:,0]*a, _Tint[:,1]*b
+    #
+    shell_radii = np.linspace(0.001,radius, N)
+    F = np.zeros((len(shell_radii),3),dtype=np.complex)
+    wa = []
+    wb = []
+    for ir, shell_radius in enumerate(shell_radii):
+        # Document: what does transverse=True do and what does that mean?
+        _wa, _wb = exact_integral_on_spherical_surface(maxL, n, shell_radius, khatOUT, transverse=True, ncpu=1)
+        wa += [_wa]
+        wb += [_wb]
+    # wa = [r, lm, cartesian, ko]
+    wa = np.array(wa)
+    wb = np.array(wb)
+    Fr = (wa*c[None,:,None,None] + wb*d[None,:,None,None]).sum(axis=1)
+    # Wa = [lm, cartesian,ko]
+    Wa = integrate(wa, k0*shell_radii, axis=0)
+    Wb = integrate(wb, k0*shell_radii, axis=0)
+    # Perform the sum over (l,m)
+    F = (Wa * c[:,None,None] + Wb * d[:,None,None]).sum(axis=0)
+    return F
+
 if __name__=='__main__':
     pass
