@@ -322,7 +322,7 @@ def far_field_volume_integral(
     k0      = 2*pi
     # Mie coefficients for the sphere's interior
     # - Incident Plane Wave amplitudes
-    a, b, Lvalues = vsh.pw_to_vsh(maxL, khatINC, ehatINC, ncpu=1)
+    a, b, Lvalues = pw_to_vsh(maxL, khatINC, ehatINC, ncpu=1)
     a, b = a[:,0], b[:,0]
     # - T-matrix
     _Tint = np.array([mie_int(l, n, k0*radius) for l in Lvalues])
