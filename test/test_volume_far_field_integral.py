@@ -60,7 +60,7 @@ def test(
     F = (Wa * c[:,None,None] + Wb * d[:,None,None]).sum(axis=0)
 
     # Exact integral from the series 
-    Fexact = mie.far_field_mie(maxL, n, radius,kvecO, khatINC,ehatINC)
+    Fexact = mie.far_field(maxL, n, radius,kvecO, khatINC,ehatINC)
 
     # Compute Error
     df = np.abs(F-Fexact)

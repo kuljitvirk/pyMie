@@ -214,7 +214,7 @@ def far_field_dyadic(maxL, n, radius, khatOUT, khatINC):
     #
     return S
 #
-def far_field_mie_fwd(maxL, nratio, radius, ehatINC):
+def far_field_fwd(maxL, nratio, radius, ehatINC):
     k0 = 2*pi
     F = 0
     for l in range(1, maxL+1):
@@ -317,7 +317,7 @@ def far_field_volume_integral(
 
     Result should match the statement:
     ::
-        Fexact = far_field_mie(maxL, n, radius,kvecO, khatINC,ehatINC)
+        Fexact = far_field(maxL, n, radius,kvecO, khatINC,ehatINC)
     """
     k0      = 2*pi
     # Mie coefficients for the sphere's interior
