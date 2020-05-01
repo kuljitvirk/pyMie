@@ -3,11 +3,10 @@ import os
 import time
 import numpy as np
 from math import pi
-sys.path.append(os.path.dirname(__file__)+'/../src/')
+sys.path.append(os.path.dirname(__file__)+'/../')
 from common import gen_surface_spherical
-import vsh
-import mie
 from scipy.integrate import simps
+from src import vsh, mie
 def test(
     radius  = 1,
     n       = 3+0.5j,

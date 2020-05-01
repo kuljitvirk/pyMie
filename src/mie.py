@@ -7,8 +7,6 @@ So parameters are:
 (ka, nsphere/nbackground, position vector, incidence direction)
 The numerical paramter is maxL = maximum value of the order of spherical harmonics
 """
-import sys
-import os
 import numpy as np
 from numpy import exp, sqrt
 from math import pi
@@ -16,9 +14,8 @@ import datetime
 from dataclasses import dataclass
 from scipy import special as sp
 import pickle
+from scipy.integrate import simps
 from multiprocessing import Pool, cpu_count
-sys.path.append(os.path.dirname(__file__))
-sys.path.append(os.path.dirname(__file__)+'/../src')
 from vsh import *
 #
 def mie_alpha_beta(l, nratio, ka):
@@ -298,7 +295,6 @@ def compute_fields(
     E[:,sel_o]  += Es
     return E, Einc #,(Ei, Es, Einc)
 #
-from scipy.integrate import simps
 def far_field_volume_integral(
     radius  = 1,
     n       = 3+0.5j,
