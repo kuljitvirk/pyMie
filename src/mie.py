@@ -16,7 +16,7 @@ from scipy import special as sp
 import pickle
 from scipy.integrate import simps
 from multiprocessing import Pool, cpu_count
-from vsh import *
+from .vsh import *
 #
 def mie_alpha_beta(l, nratio, ka):
     """
@@ -264,10 +264,13 @@ def compute_fields(
     radius, 
     n, 
     ehatINC    = [[0.,1.,0.]],
-    return_components = False,
     save_results=None,
     ncpu = None
     ):
+    """
+    Returns:
+        E, Einc
+    """
     wavelength = 1.0
     kvecINC    = [[0.,0.,-1.]]
     k0         = 2*pi*wavelength

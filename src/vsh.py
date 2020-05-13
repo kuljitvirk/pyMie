@@ -119,6 +119,12 @@ class vsh(object):
     size_parameter : CTYPE = None
     #shape = (l, m, point)
     def __init__(self, maxL, points, size_parameter=None, coord='Cartesian', kind=1, minL = 1,n=1,ncpu=None):
+        """
+        .. note: ``points`` should be specified as kr where k = wavenumber and r is spatial coordinate in real space
+        Args:
+            maxL (int) : maximum L number
+            points (ndarray) : Array of size [N x 3] where N = number of points
+        """
         assert kind in (1,3) , 'kwarg "kind" should be 1 or 3'
         if kind==3:
             assert size_parameter is not None, 'Specify "size_paramter" for normalizing vector basis'
@@ -224,7 +230,7 @@ class vsh(object):
         ncpu = self.ncpu
         if ncpu==1:
             workers = None
-        elif ncpu is None:
+        elif ncpu is None or ncpu > 1:
             ncpu = min(len(self._lm_table)//2, cpu_count()//2)
             workers = Pool(ncpu)
             ncpu = workers._processes
